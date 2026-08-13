@@ -1,0 +1,12 @@
+# Données et artefacts générés (reproductibles via les scripts du pipeline)
+otp-delay-risk/data/flights_synthetic.csv
+otp-delay-risk/model/otp_model.joblib
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store

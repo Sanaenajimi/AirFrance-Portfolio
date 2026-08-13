@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitoring OTP — Ground Ops Air France</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --page-plane:     #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --success:        #006300;
+
+    --series-1: #2a78d6; /* blue */
+    --series-2: #eb6834; /* orange */
+    --series-3: #1baf7a; /* aqua */
+    --series-4: #eda100; /* yellow */
+
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-serious: #ec835a;
+    --status-critical: #d03b3b;
+
+    --seq-100: #cde2fb; --seq-200: #9ec5f4; --seq-300: #6da7ec;
+    --seq-400: #3987e5; --seq-500: #256abf; --seq-600: #184f95; --seq-700: #0d366b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --page-plane:     #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --success:        #0ca30c;
+      --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --page-plane:     #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --success:        #0ca30c;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  /* --page-plane / --text-primary are scoped to .viz-root and below, so the
+     rules that consume them must live on .viz-root (or a descendant), not on
+     body — body is an ANCESTOR of .viz-root and custom properties do not
+     cascade upward. Applying them here is what makes the dark-mode toggle
+     actually repaint the page background and text. */
+  .viz-root {
+    display: block;
+    min-height: 100vh;
+    background: var(--page-plane);
+    color: var(--text-primary);
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 28px 20px 64px; }
+
+  header.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  header.top h1 { font-size: 22px; margin: 0 0 4px; }
+  header.top p.subtitle { margin: 0; color: var(--text-secondary); font-size: 14px; }
+  .meta { text-align: right; font-size: 12px; color: var(--text-muted); }
+  .theme-toggle {
+    border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary);
+    border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer;
+  }
+
+  .disclaimer {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 24px;
+  }
+
+  section { margin-bottom: 32px; }
+  section h2 { font-size: 15px; margin: 0 0 12px; color: var(--text-primary); }
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px; }
+
+  .grid { display: grid; gap: 16px; }
+  .grid-stats { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 860px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  .stat-tile .label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .stat-tile .value { font-size: 26px; font-weight: 600; }
+  .stat-tile .delta { font-size: 12px; margin-top: 4px; color: var(--text-muted); }
+  .stat-tile .delta.good { color: var(--success); }
+
+  svg { display: block; overflow: visible; }
+  .axis-label { font-size: 11px; fill: var(--text-muted); }
+  .gridline { stroke: var(--gridline); stroke-width: 1; }
+  .baseline { stroke: var(--baseline); stroke-width: 1; }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+  .legend .item { display: flex; align-items: center; gap: 6px; }
+  .legend .swatch { width: 10px; height: 10px; border-radius: 2px; }
+
+  .tooltip {
+    position: fixed; pointer-events: none; z-index: 50;
+    background: var(--text-primary); color: var(--surface-1);
+    font-size: 12px; padding: 6px 9px; border-radius: 6px; opacity: 0; transition: opacity .08s;
+    max-width: 220px;
+  }
+
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.data-table th, table.data-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--gridline); }
+  table.data-table th { color: var(--text-secondary); font-weight: 500; }
+  table.data-table td.num { font-variant-numeric: tabular-nums; text-align: right; }
+
+  .table-toggle {
+    font-size: 12px; color: var(--text-secondary); background: none; border: 1px solid var(--border);
+    border-radius: 6px; padding: 4px 9px; cursor: pointer; margin-left: 8px;
+  }
+  .card-head { display: flex; justify-content: space-between; align-items: center; }
+  .hidden { display: none !important; }
+
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .badge.status-Fait { background: rgba(12,163,12,0.12); color: var(--status-good); }
+  .badge.status-EnCours, .badge.status-EnRevue { background: rgba(250,178,25,0.16); color: #9a6a00; }
+  .badge.status-AFaire { background: rgba(137,135,129,0.16); color: var(--text-secondary); }
+  .badge.prio-Must { background: rgba(208,59,59,0.12); color: var(--status-critical); }
+  .badge.prio-Should { background: rgba(250,178,25,0.16); color: #9a6a00; }
+  .badge.prio-Could { background: rgba(42,120,214,0.12); color: var(--series-1); }
+  .badge.prio-Wont { background: rgba(137,135,129,0.16); color: var(--text-secondary); }
+
+  footer { color: var(--text-muted); font-size: 11.5px; margin-top: 40px; border-top: 1px solid var(--border); padding-top: 14px; }
+</style>
+</head>
+<body>
+<div class="viz-root">
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>Monitoring OTP — Risque de retard Ground Ops</h1>
+      <p class="subtitle">Dashboard de suivi du modèle de prédiction du risque OTP — rôle Business Analyst modèle OTP</p>
+    </div>
+    <div class="meta">
+      <button class="theme-toggle" id="themeToggle" type="button">Mode sombre</button>
+      <div id="generatedAt" style="margin-top:8px;"></div>
+    </div>
+  </header>
+
+  <div class="disclaimer">
+    ⚠️ Données 100% simulées à des fins de démonstration (portfolio). Aucune donnée réelle Air France
+    n'est utilisée. Le modèle, les métriques et le backlog illustrent le fonctionnement attendu du
+    poste de Business Analyst du modèle de risque OTP.
+  </div>
+
+  <section id="kpis">
+    <h2>Indicateurs clés — dernière fenêtre de test</h2>
+    <div class="grid grid-stats" id="kpiGrid"></div>
+  </section>
+
+  <section>
+    <div class="card-head"><h2>Suivi hebdomadaire — taux de rupture OTP (réel vs prédit)</h2></div>
+    <div class="card">
+      <div id="weeklyBreachChart"></div>
+      <div class="legend" id="weeklyBreachLegend"></div>
+    </div>
+  </section>
+
+  <div class="grid grid-2">
+    <section>
+      <div class="card-head">
+        <h2>Performance du modèle dans le temps (AUC hebdomadaire)</h2>
+      </div>
+      <div class="card">
+        <div id="weeklyAucChart"></div>
+      </div>
+    </section>
+    <section>
+      <div class="card-head"><h2>Matrice de confusion — période de test</h2></div>
+      <div class="card">
+        <div id="confusionMatrix"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="grid grid-2">
+    <section>
+      <div class="card-head"><h2>Risque moyen par hub / type de courrier</h2></div>
+      <div class="card">
+        <div id="riskHubChart"></div>
+        <div class="legend" id="riskHubLegend"></div>
+      </div>
+    </section>
+    <section>
+      <div class="card-head"><h2>Top 10 destinations à risque</h2></div>
+      <div class="card">
+        <div id="riskDestChart"></div>
+      </div>
+    </section>
+  </div>
+
+  <section>
+    <div class="card-head"><h2>Facteurs contributeurs au risque (importance des variables)</h2></div>
+    <div class="card">
+      <div id="featureImportanceChart"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="card-head">
+      <h2>Backlog du modèle OTP</h2>
+    </div>
+    <div class="grid grid-3" style="margin-bottom:14px;">
+      <div class="card stat-tile"><div class="label">Items backlog</div><div class="value" id="backlogTotal"></div></div>
+      <div class="card stat-tile"><div class="label">Fait</div><div class="value" id="backlogDone"></div></div>
+      <div class="card stat-tile"><div class="label">En cours / en revue</div><div class="value" id="backlogInProgress"></div></div>
+    </div>
+    <div class="card">
+      <table class="data-table" id="backlogTable">
+        <thead><tr><th>ID</th><th>Titre</th><th>Priorité</th><th>Statut</th><th>Release</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Généré automatiquement par <code>dashboard/build_dashboard.py</code> à partir de
+    <code>model/train_model.py</code> et <code>backlog/backlog_modele_otp.csv</code>.
+    Projet portfolio — poste Data Officer Operations, Ground Ops (Customer, Opérations, Ressources), Air France.
+  </footer>
+
+</div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const DASHBOARD_DATA = /*__DASHBOARD_DATA__*/;
+const BACKLOG_SUMMARY = /*__BACKLOG_SUMMARY__*/;
+
+const root = document.querySelector('.viz-root');
+const cssVar = (name) => getComputedStyle(root).getPropertyValue(name).trim();
+const tooltip = document.getElementById('tooltip');
+
+function showTooltip(html, x, y) {
+  tooltip.innerHTML = html;
+  tooltip.style.left = (x + 14) + 'px';
+  tooltip.style.top = (y + 14) + 'px';
+  tooltip.style.opacity = 1;
+}
+function hideTooltip() { tooltip.style.opacity = 0; }
+
+// ---------- Theme toggle ----------
+const themeToggle = document.getElementById('themeToggle');
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  themeToggle.textContent = next === 'dark' ? 'Mode clair' : 'Mode sombre';
+  renderAll();
+});
+
+// ---------- Helpers ----------
+function svgEl(tag, attrs) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+function fmtPct(x) { return (x * 100).toFixed(1) + '%'; }
+
+// ---------- KPI tiles ----------
+function renderKpis() {
+  const m = DASHBOARD_DATA.metrics;
+  const grid = document.getElementById('kpiGrid');
+  grid.innerHTML = '';
+  const tiles = [
+    { label: 'AUC (test)', value: m.auc.toFixed(3) },
+    { label: 'Précision', value: fmtPct(m.precision) },
+    { label: 'Rappel', value: fmtPct(m.recall) },
+    { label: 'F1-score', value: m.f1.toFixed(3) },
+    { label: 'Taux rupture OTP global', value: fmtPct(DASHBOARD_DATA.overall_otp_breach_rate) },
+    { label: 'Vols analysés', value: DASHBOARD_DATA.n_flights_total.toLocaleString('fr-FR') },
+  ];
+  tiles.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'card stat-tile';
+    div.innerHTML = `<div class="label">${t.label}</div><div class="value">${t.value}</div>`;
+    grid.appendChild(div);
+  });
+  document.getElementById('generatedAt').textContent =
+    'Généré le ' + new Date(DASHBOARD_DATA.generated_at).toLocaleString('fr-FR');
+}
+
+// ---------- Line chart (weekly breach rate: actual vs predicted) ----------
+function renderWeeklyBreachChart() {
+  const container = document.getElementById('weeklyBreachChart');
+  container.innerHTML = '';
+  const data = DASHBOARD_DATA.weekly_monitoring;
+  const w = container.clientWidth || 1100, h = 260, padL = 40, padR = 16, padT = 16, padB = 28;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+
+  const maxY = Math.max(0.05, ...data.map(d => Math.max(d.otp_breach_rate_actual, d.otp_breach_rate_predicted))) * 1.2;
+  const x = i => padL + (i / (data.length - 1)) * plotW;
+  const y = v => padT + plotH - (v / maxY) * plotH;
+
+  const svg = svgEl('svg', { width: w, height: h, viewBox: `0 0 ${w} ${h}` });
+
+  // gridlines
+  for (let i = 0; i <= 4; i++) {
+    const gy = padT + (i / 4) * plotH;
+    svg.appendChild(svgEl('line', { x1: padL, x2: w - padR, y1: gy, y2: gy, class: 'gridline' }));
+    const label = svgEl('text', { x: 6, y: gy + 4, class: 'axis-label' });
+    label.textContent = fmtPct(maxY * (1 - i / 4));
+    svg.appendChild(label);
+  }
+  svg.appendChild(svgEl('line', { x1: padL, x2: w - padR, y1: padT + plotH, y2: padT + plotH, class: 'baseline' }));
+
+  function linePath(key) {
+    return data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(d[key])}`).join(' ');
+  }
+  svg.appendChild(svgEl('path', { d: linePath('otp_breach_rate_actual'), fill: 'none', stroke: cssVar('--series-1'), 'stroke-width': 2 }));
+  svg.appendChild(svgEl('path', { d: linePath('otp_breach_rate_predicted'), fill: 'none', stroke: cssVar('--series-2'), 'stroke-width': 2, 'stroke-dasharray': '5 4' }));
+
+  // x labels (every ~3rd week)
+  data.forEach((d, i) => {
+    if (i % Math.ceil(data.length / 7) === 0 || i === data.length - 1) {
+      const label = svgEl('text', { x: x(i), y: h - 6, class: 'axis-label', 'text-anchor': 'middle' });
+      label.textContent = d.week.slice(5);
+      svg.appendChild(label);
+    }
+  });
+
+  // hover crosshair + tooltip
+  const hoverLine = svgEl('line', { x1: 0, x2: 0, y1: padT, y2: padT + plotH, stroke: cssVar('--text-muted'), 'stroke-width': 1, opacity: 0 });
+  svg.appendChild(hoverLine);
+  const overlay = svgEl('rect', { x: padL, y: padT, width: plotW, height: plotH, fill: 'transparent' });
+  overlay.addEventListener('mousemove', (e) => {
+    const rect = svg.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    let idx = Math.round(((mx - padL) / plotW) * (data.length - 1));
+    idx = Math.max(0, Math.min(data.length - 1, idx));
+    const d = data[idx];
+    hoverLine.setAttribute('x1', x(idx)); hoverLine.setAttribute('x2', x(idx)); hoverLine.setAttribute('opacity', 1);
+    showTooltip(
+      `<strong>Semaine du ${d.week}</strong><br>Réel: ${fmtPct(d.otp_breach_rate_actual)} · Prédit: ${fmtPct(d.otp_breach_rate_predicted)}<br>n=${d.n_flights} vols`,
+      e.clientX, e.clientY
+    );
+  });
+  overlay.addEventListener('mouseleave', () => { hoverLine.setAttribute('opacity', 0); hideTooltip(); });
+  svg.appendChild(overlay);
+
+  container.appendChild(svg);
+
+  const legend = document.getElementById('weeklyBreachLegend');
+  legend.innerHTML = `
+    <div class="item"><span class="swatch" style="background:${cssVar('--series-1')}"></span>Taux réel de rupture OTP</div>
+    <div class="item"><span class="swatch" style="background:${cssVar('--series-2')}"></span>Taux prédit par le modèle</div>`;
+}
+
+// ---------- Line chart (weekly AUC) ----------
+function renderWeeklyAucChart() {
+  const container = document.getElementById('weeklyAucChart');
+  container.innerHTML = '';
+  const data = DASHBOARD_DATA.weekly_monitoring.filter(d => d.model_auc !== null);
+  const w = container.clientWidth || 520, h = 240, padL = 40, padR = 16, padT = 16, padB = 28;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+  const minY = 0.6, maxY = 1.0;
+  const x = i => padL + (i / (data.length - 1)) * plotW;
+  const y = v => padT + plotH - ((v - minY) / (maxY - minY)) * plotH;
+
+  const svg = svgEl('svg', { width: w, height: h, viewBox: `0 0 ${w} ${h}` });
+  for (let i = 0; i <= 4; i++) {
+    const val = minY + (i / 4) * (maxY - minY);
+    const gy = y(val);
+    svg.appendChild(svgEl('line', { x1: padL, x2: w - padR, y1: gy, y2: gy, class: 'gridline' }));
+    const label = svgEl('text', { x: 6, y: gy + 4, class: 'axis-label' });
+    label.textContent = val.toFixed(2);
+    svg.appendChild(label);
+  }
+  // seuil MCO de référence
+  const seuil = 0.85;
+  svg.appendChild(svgEl('line', { x1: padL, x2: w - padR, y1: y(seuil), y2: y(seuil), stroke: cssVar('--status-warning'), 'stroke-width': 1.5, 'stroke-dasharray': '3 3' }));
+
+  const path = data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(d.model_auc)}`).join(' ');
+  svg.appendChild(svgEl('path', { d: path, fill: 'none', stroke: cssVar('--series-1'), 'stroke-width': 2 }));
+  data.forEach((d, i) => {
+    svg.appendChild(svgEl('circle', { cx: x(i), cy: y(d.model_auc), r: 3, fill: cssVar('--series-1') }));
+  });
+
+  const overlay = svgEl('rect', { x: padL, y: padT, width: plotW, height: plotH, fill: 'transparent' });
+  overlay.addEventListener('mousemove', (e) => {
+    const rect = svg.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    let idx = Math.round(((mx - padL) / plotW) * (data.length - 1));
+    idx = Math.max(0, Math.min(data.length - 1, idx));
+    const d = data[idx];
+    showTooltip(`<strong>${d.week}</strong><br>AUC: ${d.model_auc}`, e.clientX, e.clientY);
+  });
+  overlay.addEventListener('mouseleave', hideTooltip);
+  svg.appendChild(overlay);
+
+  container.appendChild(svg);
+}
+
+// ---------- Horizontal bar chart (generic) ----------
+function renderHBarChart(containerId, items, opts) {
+  opts = opts || {};
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  const w = container.clientWidth || 520;
+  const rowH = 26, padL = opts.labelWidth || 110, padR = 50, padT = 10, padB = 10;
+  const h = items.length * rowH + padT + padB;
+  const plotW = w - padL - padR;
+  const maxV = Math.max(...items.map(d => d.value)) * 1.15 || 1;
+
+  const svg = svgEl('svg', { width: w, height: h, viewBox: `0 0 ${w} ${h}` });
+  items.forEach((d, i) => {
+    const yTop = padT + i * rowH;
+    const barW = Math.max(2, (d.value / maxV) * plotW);
+    const label = svgEl('text', { x: padL - 8, y: yTop + rowH / 2 + 4, class: 'axis-label', 'text-anchor': 'end' });
+    label.textContent = d.label;
+    svg.appendChild(label);
+
+    const bar = svgEl('rect', {
+      x: padL, y: yTop + 5, width: barW, height: rowH - 10, rx: 4,
+      fill: d.color || cssVar('--series-1'),
+    });
+    bar.addEventListener('mousemove', (e) => showTooltip(`<strong>${d.label}</strong><br>${opts.formatter ? opts.formatter(d.value) : d.value}`, e.clientX, e.clientY));
+    bar.addEventListener('mouseleave', hideTooltip);
+    svg.appendChild(bar);
+
+    const valLabel = svgEl('text', { x: padL + barW + 6, y: yTop + rowH / 2 + 4, class: 'axis-label' });
+    valLabel.textContent = opts.formatter ? opts.formatter(d.value) : d.value;
+    svg.appendChild(valLabel);
+  });
+  container.appendChild(svg);
+}
+
+function renderRiskCharts() {
+  const hubItems = Object.entries(DASHBOARD_DATA.risk_by_hub).map(([k, v]) => ({ label: k, value: v, color: cssVar('--series-1') }));
+  const haulItems = Object.entries(DASHBOARD_DATA.risk_by_haul_type).map(([k, v], i) => ({
+    label: k, value: v, color: [cssVar('--series-1'), cssVar('--series-2'), cssVar('--series-3')][i % 3]
+  }));
+  renderHBarChart('riskHubChart', [...hubItems, ...haulItems], { formatter: fmtPct, labelWidth: 130 });
+
+  document.getElementById('riskHubLegend').innerHTML =
+    `<div class="item" style="color:var(--text-muted)">Risque moyen de rupture OTP prédit (score du modèle), par hub puis par type de courrier</div>`;
+
+  const destItems = Object.entries(DASHBOARD_DATA.risk_by_destination_top10)
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => ({ label: k, value: v, color: cssVar('--series-4') }));
+  renderHBarChart('riskDestChart', destItems, { formatter: fmtPct, labelWidth: 70 });
+}
+
+function renderFeatureImportance() {
+  const items = DASHBOARD_DATA.top_features.map(f => ({ label: f.feature, value: f.importance, color: cssVar('--series-1') }));
+  renderHBarChart('featureImportanceChart', items, { formatter: (v) => v.toFixed(3), labelWidth: 220 });
+}
+
+// ---------- Confusion matrix ----------
+function renderConfusionMatrix() {
+  const container = document.getElementById('confusionMatrix');
+  container.innerHTML = '';
+  const cm = DASHBOARD_DATA.confusion_matrix;
+  const max = Math.max(...cm.matrix.flat());
+  const seqSteps = ['--seq-100', '--seq-300', '--seq-500', '--seq-700'];
+  const cellColor = (v) => {
+    const ratio = v / max;
+    const idx = Math.min(3, Math.floor(ratio * 4));
+    return cssVar(seqSteps[idx]);
+  };
+  const textColor = (v) => (v / max > 0.55 ? '#ffffff' : cssVar('--text-primary'));
+
+  const table = document.createElement('table');
+  table.className = 'data-table';
+  table.innerHTML = `
+    <thead><tr><th></th><th>Prédit : OTP respecté</th><th>Prédit : rupture OTP</th></tr></thead>
+    <tbody>
+      <tr>
+        <th>Réel : OTP respecté</th>
+        <td class="num" style="background:${cellColor(cm.matrix[0][0])};color:${textColor(cm.matrix[0][0])}">${cm.matrix[0][0]}</td>
+        <td class="num" style="background:${cellColor(cm.matrix[0][1])};color:${textColor(cm.matrix[0][1])}">${cm.matrix[0][1]}</td>
+      </tr>
+      <tr>
+        <th>Réel : rupture OTP</th>
+        <td class="num" style="background:${cellColor(cm.matrix[1][0])};color:${textColor(cm.matrix[1][0])}">${cm.matrix[1][0]}</td>
+        <td class="num" style="background:${cellColor(cm.matrix[1][1])};color:${textColor(cm.matrix[1][1])}">${cm.matrix[1][1]}</td>
+      </tr>
+    </tbody>`;
+  container.appendChild(table);
+}
+
+// ---------- Backlog ----------
+function renderBacklog() {
+  document.getElementById('backlogTotal').textContent = BACKLOG_SUMMARY.total_items;
+  document.getElementById('backlogDone').textContent = BACKLOG_SUMMARY.by_status['Fait'] || 0;
+  const inProgress = (BACKLOG_SUMMARY.by_status['En cours'] || 0) + (BACKLOG_SUMMARY.by_status['En revue'] || 0);
+  document.getElementById('backlogInProgress').textContent = inProgress;
+
+  const statusClass = (s) => 'status-' + s.replace(/[^A-Za-z]/g, '');
+  const prioClass = (p) => 'prio-' + p.split(' ')[0].replace(/[^A-Za-z]/g, '');
+
+  const tbody = document.querySelector('#backlogTable tbody');
+  tbody.innerHTML = '';
+  BACKLOG_SUMMARY.items.forEach(it => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${it.id}</td>
+      <td>${it.titre}</td>
+      <td><span class="badge ${prioClass(it.priorite)}">${it.priorite}</span></td>
+      <td><span class="badge ${statusClass(it.statut)}">${it.statut}</span></td>
+      <td>${it.release}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderAll() {
+  renderKpis();
+  renderWeeklyBreachChart();
+  renderWeeklyAucChart();
+  renderRiskCharts();
+  renderFeatureImportance();
+  renderConfusionMatrix();
+  renderBacklog();
+}
+
+renderAll();
+window.addEventListener('resize', () => {
+  clearTimeout(window.__rt);
+  window.__rt = setTimeout(renderAll, 150);
+});
+</script>
+</body>
+</html>
