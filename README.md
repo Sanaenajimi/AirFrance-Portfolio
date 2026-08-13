@@ -25,15 +25,22 @@ Opérations, Ressources), ainsi qu'un rôle transverse de gouvernance.
 
 ```bash
 git clone <url-du-repo>
-cd airfrance-groundops-data-role
-python -m venv .venv && source .venv/bin/activate   # optionnel
+python -m venv .venv 
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
 # Pipeline du modèle OTP (données -> modèle -> dashboard)
 cd otp-delay-risk
+
 python data/generate_synthetic_data.py --n-flights 20000 --seed 42 --out data/flights_synthetic.csv
-cd model && python train_model.py --data ../data/flights_synthetic.csv && cd ..
-cd dashboard && python build_dashboard.py && cd ../..
+
+cd model
+python train_model.py --data ..\data\flights_synthetic.csv
+cd ..
+
+cd dashboard
+python build_dashboard.py
+cd ..\..
 ```
 
 Ouvrez ensuite `otp-delay-risk/dashboard/otp_monitoring_dashboard.html` dans
