@@ -160,6 +160,39 @@
   .hero-disclaimer p { margin: 0; font-size: 12px; line-height: 1.4; color: var(--muted-foreground); }
   .hero-spacer { height: 64px; }
 
+  /* Tab navigation */
+  .tab-nav { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 20px 12px; }
+  .tab-btn { display: inline-flex; align-items: center; gap: 7px; border: none; background: transparent; color: var(--muted-foreground); font-family: inherit; font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 999px; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+  .tab-btn svg { height: 14px; width: 14px; flex-shrink: 0; }
+  .tab-btn:hover { background: var(--muted); color: var(--foreground); }
+  .tab-btn.active { background: var(--primary); color: var(--primary-foreground); }
+
+  .view:not(.active) { display: none; }
+
+  .role-intro { padding-top: 56px; padding-bottom: 40px; max-width: 46rem; }
+  .role-title { font-size: clamp(2.25rem, 6vw, 3.75rem); line-height: 0.95; font-weight: 800; margin-top: 20px; }
+  .role-title .accent { color: var(--primary); }
+
+  .grid-checklist { grid-template-columns: 1fr; }
+  @media (min-width: 768px) { .grid-checklist { grid-template-columns: 1fr 1fr; } }
+  .checklist-card { border: 1px solid var(--border); background: color-mix(in oklch, var(--muted) 45%, transparent); border-radius: 14px; padding: 16px 18px; }
+  .checklist-card .cl-title { margin: 0 0 10px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .checklist-card .cl-title svg { height: 15px; width: 15px; color: var(--primary); flex-shrink: 0; }
+  .checklist-card ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .checklist-card li { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; line-height: 1.5; color: var(--muted-foreground); }
+  .checklist-card li svg { height: 14px; width: 14px; flex-shrink: 0; margin-top: 2px; color: var(--good); }
+
+  .audit-status { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; margin-bottom: 4px; }
+  .audit-status.ok { background: oklch(from var(--good) l c h / 12%); }
+  .audit-status.warn { background: oklch(from var(--critical) l c h / 10%); }
+  .audit-status svg { height: 22px; width: 22px; flex-shrink: 0; }
+  .audit-status.ok svg { color: var(--good); }
+  .audit-status.warn svg { color: var(--critical); }
+  .audit-status .audit-title { font-weight: 700; font-size: 14px; margin: 0; }
+  .audit-status .audit-sub { margin: 2px 0 0; font-size: 12px; color: var(--muted-foreground); }
+  .audit-issue { display: flex; align-items: flex-start; gap: 10px; padding: 10px 4px; border-top: 1px solid var(--border); font-size: 13px; }
+  .audit-issue svg { height: 15px; width: 15px; flex-shrink: 0; margin-top: 2px; color: var(--critical); }
+
   main { max-width: 1240px; margin: 0 auto; padding: 64px 20px 96px; display: flex; flex-direction: column; gap: 64px; }
 
   .section-title { margin-bottom: 20px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
@@ -257,9 +290,24 @@
         </span>
       </button>
     </div>
+    <nav class="tab-nav wrap" role="tablist" aria-label="Sections du portfolio">
+      <button class="tab-btn active" type="button" data-view="otp" role="tab" aria-selected="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L14 9 L21 12 L14 13.5 L12 22 L10 13.5 L3 12 L10 9 Z"/></svg>
+        OTP · Risque retard
+      </button>
+      <button class="tab-btn" type="button" data-view="privacy" role="tab" aria-selected="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L20 5 V11 C20 16.5 16.5 20.5 12 22 C7.5 20.5 4 16.5 4 11 V5 Z"/></svg>
+        Privacy Coordinator
+      </button>
+      <button class="tab-btn" type="button" data-view="ai" role="tab" aria-selected="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>
+        AI Responsible
+      </button>
+    </nav>
     <div class="flag-rule"></div>
   </header>
 
+  <div id="view-otp" class="view active">
   <section class="hero sky">
     <div class="wrap hero-inner">
       <div>
@@ -381,11 +429,127 @@
       </div>
     </section>
   </main>
+  </div>
+
+  <div id="view-privacy" class="view">
+    <div class="wrap role-intro">
+      <div class="pill-row">
+        <span class="pill tone-info">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L20 5 V11 C20 16.5 16.5 20.5 12 22 C7.5 20.5 4 16.5 4 11 V5 Z"/></svg>
+          Relais opérationnel du DPO
+        </span>
+        <span class="pill tone-neutral">Customer · Opérations · Ressources</span>
+      </div>
+      <h1 class="role-title">Privacy <span class="accent">Coordinator</span></h1>
+      <p class="lede">S'assurer de la bonne application des règlements relatifs aux données personnelles sur le périmètre Ground Ops : tenue du registre des traitements, conseil de premier niveau aux équipes métier, et escalade au DPO quand nécessaire.</p>
+    </div>
+
+    <main>
+      <section>
+        <div class="section-title">
+          <div class="left"><span class="index num">01</span><h2>Indicateurs clés</h2></div>
+          <span class="hint">registre des traitements Ground Ops</span>
+        </div>
+        <div class="grid grid-kpi" id="privacyKpiGrid"></div>
+      </section>
+
+      <section>
+        <div class="section-title">
+          <div class="left"><span class="index num">02</span><h2>Registre des traitements</h2></div>
+          <span class="hint">article 30 RGPD</span>
+        </div>
+        <div class="surface" style="overflow:hidden;">
+          <div class="table-scroll">
+            <table class="backlog-table" id="privacyTable">
+              <thead><tr><th>ID</th><th>Traitement</th><th>Domaine</th><th>Base légale</th><th>DPIA</th><th>Dernier réexamen</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-title">
+          <div class="left"><span class="index num">03</span><h2>Checklist relais DPO</h2></div>
+          <span class="hint">conseil de 1er niveau aux équipes métier</span>
+        </div>
+        <div class="grid grid-checklist" id="privacyChecklist"></div>
+      </section>
+
+      <section>
+        <div class="section-title">
+          <div class="left"><span class="index num">04</span><h2>Contrôle de conformité automatisé</h2></div>
+          <span class="hint">équivalent de validate_registre.py</span>
+        </div>
+        <div class="surface panel" id="privacyAudit"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="view-ai" class="view">
+    <div class="wrap role-intro">
+      <div class="pill-row">
+        <span class="pill tone-info">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg>
+          Règlement européen sur l'IA
+        </span>
+        <span class="pill tone-neutral">Customer · Opérations · Ressources</span>
+      </div>
+      <h1 class="role-title">AI <span class="accent">Responsible</span></h1>
+      <p class="lede">Garantir la bonne application du règlement sur l'IA : conseil aux décideurs sur leurs déclarations obligatoires, classification du risque de chaque usage, et traçabilité complète dans un registre.</p>
+    </div>
+
+    <main>
+      <section>
+        <div class="section-title">
+          <div class="left"><span class="index num">01</span><h2>Indicateurs clés</h2></div>
+          <span class="hint">registre des usages IA Ground Ops</span>
+        </div>
+        <div class="grid grid-kpi" id="aiKpiGrid"></div>
+      </section>
+
+      <section>
+        <div class="section-title">
+          <div class="left"><span class="index num">02</span><h2>Registre des usages IA</h2></div>
+          <span class="hint">classification par niveau de risque</span>
+        </div>
+        <div class="surface" style="overflow:hidden;">
+          <div class="table-scroll">
+            <table class="backlog-table" id="aiTable">
+              <thead><tr><th>ID</th><th>Usage</th><th>Domaine</th><th>Risque</th><th>Déclaré</th><th>Dernier audit</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-title">
+          <div class="left"><span class="index num">03</span><h2>Focus — usage à risque élevé</h2></div>
+          <span class="hint">IA-02 · outil d'affectation des équipes au sol</span>
+        </div>
+        <div class="surface panel">
+          <p class="panel-title">Pourquoi ce niveau de risque ?</p>
+          <p style="color:var(--muted-foreground); font-size:14px; line-height:1.6; margin:0 0 16px;">Un système qui influence l'affectation de tâches individuelles au personnel relève de l'Annexe III du règlement européen sur l'IA (« gestion des travailleurs »), au même titre que le recrutement, l'évaluation ou le licenciement assistés par IA.</p>
+          <p class="panel-title">Obligations renforcées associées</p>
+          <div class="grid grid-checklist" id="aiObligations"></div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-title">
+          <div class="left"><span class="index num">04</span><h2>Contrôle de conformité automatisé</h2></div>
+          <span class="hint">équivalent de validate_registre_ia.py</span>
+        </div>
+        <div class="surface panel" id="aiAudit"></div>
+      </section>
+    </main>
+  </div>
 
   <footer class="site-footer">
     <div class="flag-rule"></div>
     <div class="footer-inner">
-      Généré à partir de <span class="num">model/train_model.py</span> et <span class="num">backlog/backlog_modele_otp.csv</span>. Projet portfolio — poste Data Officer Operations, Ground Ops (Customer, Opérations, Ressources). Données simulées.
+      Projet portfolio — poste Data Officer Operations, Ground Ops (Customer, Opérations, Ressources) : Business Analyst modèle OTP, Privacy Coordinator, AI Responsible. Données simulées.
     </div>
   </footer>
 
@@ -468,6 +632,71 @@ const backlog = [
   { id: "OTP-08", titre: "Intégration alertes dans l'outil escale", prio: "Could", statut: "À faire", release: "R3" },
   { id: "OTP-09", titre: "Extension escales province", prio: "Could", statut: "À faire", release: "R3" },
   { id: "OTP-10", titre: "Prédiction temps de roulage temps réel", prio: "Won't", statut: "À faire", release: "—" },
+];
+
+// ---------------------------------------------------------------------------
+// Données Privacy Coordinator — registre des traitements (article 30 RGPD)
+// ---------------------------------------------------------------------------
+const registreTraitements = [
+  { id: "TRT-01", nom: "Modèle prédiction risque retard OTP", domaine: "Opérations", base: "Intérêt légitime", dpiaRequise: false, dpiaStatut: "Non applicable", reexamen: "2026-02-01" },
+  { id: "TRT-02", nom: "Gestion des réclamations clients", domaine: "Customer", base: "Exécution du contrat", dpiaRequise: true, dpiaStatut: "Réalisée", reexamen: "2025-11-15" },
+  { id: "TRT-03", nom: "Planification des équipes au sol", domaine: "Ressources", base: "Obligation légale", dpiaRequise: false, dpiaStatut: "Non applicable", reexamen: "2026-01-10" },
+  { id: "TRT-04", nom: "Vidéosurveillance zones piste", domaine: "Opérations", base: "Intérêt légitime", dpiaRequise: true, dpiaStatut: "En cours", reexamen: "2026-03-01" },
+  { id: "TRT-05", nom: "Programme fidélité correspondance bagages", domaine: "Customer", base: "Exécution du contrat", dpiaRequise: false, dpiaStatut: "À confirmer", reexamen: "2025-09-20" },
+  { id: "TRT-06", nom: "Registre des usages des modèles IA Ground Ops", domaine: "Transverse", base: "Obligation légale", dpiaRequise: false, dpiaStatut: "Non applicable", reexamen: "2026-04-01" },
+];
+
+const privacyChecklistData = [
+  { title: "1 · Qualification du traitement", items: [
+    "Données à caractère personnel impliquées ?",
+    "Finalité claire et limitée (pas de « au cas où ») ?",
+    "Base légale identifiée et documentée ?",
+  ]},
+  { title: "2 · Minimisation & proportionnalité", items: [
+    "Données strictement nécessaires à la finalité ?",
+    "Alternative anonymisée ou agrégée suffisante ?",
+    "Durée de conservation définie et justifiée ?",
+  ]},
+  { title: "3 · Analyse d'impact (DPIA)", items: [
+    "Traitement sur la liste des cas nécessitant une DPIA ?",
+    "DPIA planifiée avec le DPO avant mise en production ?",
+  ]},
+  { title: "4 · Droits des personnes & transparence", items: [
+    "Personnes informées (mention, politique à jour) ?",
+    "Exercice des droits opérationnel (accès, opposition) ?",
+  ]},
+  { title: "5 · Sous-traitance & transferts", items: [
+    "Contrat de sous-traitance conforme en place ?",
+    "Transfert hors UE couvert par un mécanisme valide ?",
+  ]},
+  { title: "6 · Sécurité & traçabilité", items: [
+    "Mesures de sécurité proportionnées au risque ?",
+    "Traitement consigné dans le registre, réexamen planifié ?",
+  ]},
+];
+
+// ---------------------------------------------------------------------------
+// Données AI Responsible — registre des usages IA (règlement européen sur l'IA)
+// ---------------------------------------------------------------------------
+const registreUsagesIA = [
+  { id: "IA-01", nom: "Modèle prédiction risque retard OTP", domaine: "Opérations", risque: "Minimal", declare: true, audit: "2026-06-01" },
+  { id: "IA-02", nom: "Outil d'affectation des équipes au sol", domaine: "Ressources", risque: "Élevé", declare: true, audit: "2026-05-20" },
+  { id: "IA-03", nom: "Chatbot assistance client premier niveau", domaine: "Customer", risque: "Limité", declare: true, audit: "2026-04-15" },
+  { id: "IA-04", nom: "Détection d'anomalies bagages (vision par ordinateur)", domaine: "Opérations", risque: "À évaluer", declare: false, audit: null },
+  { id: "IA-05", nom: "Score de priorisation des réclamations clients", domaine: "Customer", risque: "Limité", declare: true, audit: "2026-06-10" },
+];
+
+const aiObligationsData = [
+  { title: "Gouvernance & documentation", items: [
+    "Système de gestion des risques documenté",
+    "Gouvernance des données (qualité, biais)",
+    "Documentation technique tenue à jour",
+  ]},
+  { title: "Contrôle & supervision", items: [
+    "Journalisation (logs) pour la traçabilité",
+    "Supervision humaine effective et significative",
+    "Droit de contestation du salarié concerné",
+  ]},
 ];
 
 // ---------------------------------------------------------------------------
@@ -771,6 +1000,203 @@ function renderBacklog() {
   });
 }
 
+// ---------- Icônes utilitaires ----------
+const ICON_CHECK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>`;
+const ICON_ALERT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L22 20 H2 Z"/><path d="M12 9v5"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg>`;
+const ICON_SHIELD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L20 5 V11 C20 16.5 16.5 20.5 12 22 C7.5 20.5 4 16.5 4 11 V5 Z"/></svg>`;
+
+// ---------- Privacy Coordinator ----------
+function renderPrivacyKpis() {
+  const grid = document.getElementById('privacyKpiGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  const dpiaRequises = registreTraitements.filter(t => t.dpiaRequise).length;
+  const dpiaSuivies = registreTraitements.filter(t => t.dpiaRequise && t.dpiaStatut !== 'Non applicable').length;
+  const dernierReexamen = registreTraitements.map(t => t.reexamen).sort().slice(-1)[0];
+  const tiles = [
+    { label: 'Traitements recensés', value: String(registreTraitements.length) },
+    { label: 'DPIA requises', value: String(dpiaRequises) },
+    { label: 'DPIA suivies', value: `${dpiaSuivies} / ${dpiaRequises}` },
+    { label: 'Domaines couverts', value: 'Customer · Ops · RH' },
+    { label: 'Dernier réexamen', value: dernierReexamen },
+  ];
+  tiles.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'surface kpi-card';
+    div.innerHTML = `<p class="label">${t.label}</p><p class="value num" style="font-size:22px;">${t.value}</p>`;
+    grid.appendChild(div);
+  });
+}
+
+function renderPrivacyTable() {
+  const body = document.querySelector('#privacyTable tbody');
+  if (!body) return;
+  body.innerHTML = '';
+  registreTraitements.forEach(t => {
+    const tr = document.createElement('tr');
+    const dpiaTone = t.dpiaStatut === 'Réalisée' ? 'good' : t.dpiaStatut === 'En cours' ? 'warn' : t.dpiaStatut === 'À confirmer' ? 'warn' : 'neutral';
+    tr.innerHTML = `
+      <td class="num" style="color:var(--muted-foreground); white-space:nowrap;">${t.id}</td>
+      <td>${t.nom}</td>
+      <td><span class="pill tone-neutral">${t.domaine}</span></td>
+      <td style="color:var(--muted-foreground); font-size:13px;">${t.base}</td>
+      <td><span class="pill tone-${dpiaTone}">${t.dpiaStatut}</span></td>
+      <td class="num" style="color:var(--muted-foreground);">${t.reexamen}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+function renderPrivacyChecklist() {
+  const grid = document.getElementById('privacyChecklist');
+  if (!grid) return;
+  grid.innerHTML = '';
+  privacyChecklistData.forEach(cat => {
+    const card = document.createElement('div');
+    card.className = 'checklist-card';
+    card.innerHTML = `<p class="cl-title">${ICON_SHIELD}${cat.title}</p>
+      <ul>${cat.items.map(i => `<li>${ICON_CHECK}${i}</li>`).join('')}</ul>`;
+    grid.appendChild(card);
+  });
+}
+
+// Reproduit la logique de privacy-coordinator/validate_registre.py
+function renderPrivacyAudit() {
+  const el = document.getElementById('privacyAudit');
+  if (!el) return;
+  const issues = [];
+  registreTraitements.forEach(t => {
+    if (t.dpiaRequise && t.dpiaStatut === 'Non applicable') {
+      issues.push(`[${t.id}] DPIA requise mais statut non renseigné`);
+    }
+  });
+  el.innerHTML = '';
+  const status = document.createElement('div');
+  status.className = 'audit-status ' + (issues.length ? 'warn' : 'ok');
+  status.innerHTML = `${issues.length ? ICON_ALERT : ICON_CHECK}
+    <div><p class="audit-title">${registreTraitements.length} traitements contrôlés</p>
+    <p class="audit-sub">${issues.length ? issues.length + ' anomalie(s) détectée(s)' : 'Aucune anomalie détectée — registre conforme'}</p></div>`;
+  el.appendChild(status);
+  issues.forEach(i => {
+    const row = document.createElement('div');
+    row.className = 'audit-issue';
+    row.innerHTML = `${ICON_ALERT}<span>${i}</span>`;
+    el.appendChild(row);
+  });
+}
+
+// ---------- AI Responsible ----------
+function renderAiKpis() {
+  const grid = document.getElementById('aiKpiGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  const risqueEleve = registreUsagesIA.filter(u => u.risque === 'Élevé').length;
+  const nonClassifies = registreUsagesIA.filter(u => u.risque === 'À évaluer').length;
+  const audits = registreUsagesIA.map(u => u.audit).filter(Boolean).sort();
+  const tiles = [
+    { label: 'Usages IA recensés', value: String(registreUsagesIA.length) },
+    { label: 'Risque élevé', value: String(risqueEleve) },
+    { label: 'Non classifiés', value: String(nonClassifies) },
+    { label: 'Déclarations à jour', value: `${registreUsagesIA.filter(u => u.declare).length} / ${registreUsagesIA.length}` },
+    { label: 'Dernier audit', value: audits.length ? audits.slice(-1)[0] : '—' },
+  ];
+  tiles.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'surface kpi-card';
+    div.innerHTML = `<p class="label">${t.label}</p><p class="value num" style="font-size:22px;">${t.value}</p>`;
+    grid.appendChild(div);
+  });
+}
+
+function renderAiTable() {
+  const body = document.querySelector('#aiTable tbody');
+  if (!body) return;
+  body.innerHTML = '';
+  const riskTone = { 'Élevé': 'critical', 'Limité': 'warn', 'Minimal': 'info', 'À évaluer': 'neutral' };
+  registreUsagesIA.forEach(u => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="num" style="color:var(--muted-foreground); white-space:nowrap;">${u.id}</td>
+      <td>${u.nom}</td>
+      <td><span class="pill tone-neutral">${u.domaine}</span></td>
+      <td><span class="pill tone-${riskTone[u.risque]}">${u.risque}</span></td>
+      <td>${u.declare ? ICON_CHECK.replace('currentColor', 'var(--good)') : ICON_ALERT.replace('currentColor', 'var(--critical)')}</td>
+      <td class="num" style="color:var(--muted-foreground);">${u.audit || '—'}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+function renderAiObligations() {
+  const grid = document.getElementById('aiObligations');
+  if (!grid) return;
+  grid.innerHTML = '';
+  aiObligationsData.forEach(cat => {
+    const card = document.createElement('div');
+    card.className = 'checklist-card';
+    card.innerHTML = `<p class="cl-title">${ICON_SHIELD}${cat.title}</p>
+      <ul>${cat.items.map(i => `<li>${ICON_CHECK}${i}</li>`).join('')}</ul>`;
+    grid.appendChild(card);
+  });
+}
+
+// Reproduit la logique de ai-responsible/validate_registre_ia.py
+function renderAiAudit() {
+  const el = document.getElementById('aiAudit');
+  if (!el) return;
+  const issues = [];
+  registreUsagesIA.forEach(u => {
+    if (u.risque === 'À évaluer') issues.push(`[${u.id}] classification de risque non finalisée — à traiter en priorité`);
+    if (u.risque === 'Élevé' && !u.declare) issues.push(`[${u.id}] risque élevé sans déclaration effectuée`);
+  });
+  el.innerHTML = '';
+  const status = document.createElement('div');
+  status.className = 'audit-status ' + (issues.length ? 'warn' : 'ok');
+  status.innerHTML = `${issues.length ? ICON_ALERT : ICON_CHECK}
+    <div><p class="audit-title">${registreUsagesIA.length} usages IA contrôlés</p>
+    <p class="audit-sub">${issues.length ? issues.length + ' anomalie(s) détectée(s)' : 'Aucune anomalie détectée'}</p></div>`;
+  el.appendChild(status);
+  issues.forEach(i => {
+    const row = document.createElement('div');
+    row.className = 'audit-issue';
+    row.innerHTML = `${ICON_ALERT}<span>${i}</span>`;
+    el.appendChild(row);
+  });
+}
+
+function renderPrivacyView() {
+  renderPrivacyKpis();
+  renderPrivacyTable();
+  renderPrivacyChecklist();
+  renderPrivacyAudit();
+}
+
+function renderAiView() {
+  renderAiKpis();
+  renderAiTable();
+  renderAiObligations();
+  renderAiAudit();
+}
+
+// ---------- Onglets ----------
+const TAB_SUBTITLES = {
+  otp: 'Business Analyst — modèle de risque de retard',
+  privacy: 'Privacy Coordinator — conformité RGPD',
+  ai: 'AI Responsible — conformité AI Act',
+};
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const view = btn.dataset.view;
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.toggle('active', b === btn);
+      b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+    });
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
+    const sub = document.querySelector('.brand-sub');
+    if (sub) sub.textContent = TAB_SUBTITLES[view] || '';
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    if (view === 'otp') renderAll();
+  });
+});
+
 function renderAll() {
   renderKpis();
   renderWeeklyChart();
@@ -783,9 +1209,14 @@ function renderAll() {
 }
 
 renderAll();
+renderPrivacyView();
+renderAiView();
 window.addEventListener('resize', () => {
   clearTimeout(window.__rt);
-  window.__rt = setTimeout(renderAll, 150);
+  window.__rt = setTimeout(() => {
+    const activeView = document.querySelector('.view.active');
+    if (activeView && activeView.id === 'view-otp') renderAll();
+  }, 150);
 });
 </script>
 </body>
